@@ -83,7 +83,6 @@ func (cloud *TagCloud) TopN(n int) []TagStat {
 	}
 
 	top := make([]TagStat, n)
-
 	// Так как массив occurrence отсортирован по убыванию,
 	// нам достаточно взять первые N тегов
 	for i := 0; i < n; i++ {
