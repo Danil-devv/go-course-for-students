@@ -36,8 +36,8 @@ func validateFlags(options *Options) error {
 		// проверка того, что файл с данными существует
 		_, err := os.Stat(options.From)
 		if errors.Is(err, os.ErrNotExist) {
-			return errors.New(fmt.Sprintf("the file %s is not exist."+
-				" unable to read the file", options.From))
+			return fmt.Errorf("the file %s is not exist."+
+				" unable to read the file", options.From)
 		}
 
 		// проверка того, что размер файла больше кол-ва игнорируемых байт
@@ -52,8 +52,8 @@ func validateFlags(options *Options) error {
 		// проверка того, что не существует файла, в который будут записываться данные
 		_, err := os.Stat(options.To)
 		if !errors.Is(err, os.ErrNotExist) {
-			return errors.New(fmt.Sprintf("the file on path %s is already exist."+
-				" unable to write data", options.To))
+			return fmt.Errorf("the file on path %s is already exist."+
+				" unable to write data", options.To)
 		}
 	}
 
@@ -61,7 +61,7 @@ func validateFlags(options *Options) error {
 	validArgs := map[string]bool{"trim_spaces": true, "upper_case": true, "lower_case": true}
 	for arg := range options.Conv {
 		if !validArgs[arg] {
-			return errors.New(fmt.Sprintf("conv arg <%s> is not correct", arg))
+			return fmt.Errorf("conv arg <%s> is not correct", arg)
 		}
 	}
 
