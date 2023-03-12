@@ -10,7 +10,7 @@ type Spacer interface {
 
 type StringSpacer interface {
 	Spacer
-	fmt.Stringer
+	String() string
 }
 
 // ------------------------------------------
@@ -19,7 +19,7 @@ type rectangle struct {
 	height float64
 }
 
-func (s *rectangle) Space() float64 {
+func (s rectangle) Space() float64 {
 	return s.width * s.height
 }
 
@@ -37,7 +37,7 @@ func getMaxBySpace(s1, s2 Spacer) Spacer {
 }
 
 func main() {
-	var s1 StringSpacer = &rectangle{width: 10, height: 10}
-	var s2 StringSpacer = &rectangle{width: 12.12345, height: 10.54321}
+	var s1 StringSpacer = rectangle{width: 10, height: 10}
+	var s2 StringSpacer = rectangle{width: 12.12345, height: 10.54321}
 	fmt.Println(getMaxBySpace(s1, s2))
 }

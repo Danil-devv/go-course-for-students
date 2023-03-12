@@ -32,14 +32,14 @@ func (s rectangle) Space() float64 {
 func main() {
 	var s1 Spacer = circle{radius: 10}
 	var s2 Spacer = &rectangle{width: 12, height: 10}
-	fmt.Println("s1 == s2", s1 == s2)
+	fmt.Println("s1 == s2", s1 == s2) // -> false
 	// var f fmt.Stringer
 	// fmt.Println("s1 == f", s1 == f)
 
-	fmt.Println("s1 == raw", s1 == circle{radius: 10})
+	fmt.Println("s1 == raw", s1 == circle{radius: 10}) // -> true
 
 	var s3 Spacer = circle{radius: 10}
-	fmt.Println("s1 == s3", s1 == s3)
+	fmt.Println("s1 == s3", s1 == s3) // -> true
 
 	/*
 		    // c := &circle{radius: 10}
@@ -50,8 +50,8 @@ func main() {
 	*/
 
 	//
-	//var s6 *circle
-	//fmt.Println("s1 == ?", s1 == getMaxBySpace(s1, s6))
+	var s6 *circle
+	fmt.Println("s1 == ?", s1 == getMaxBySpace(s1, s6))
 }
 
 // ------------------------------------------

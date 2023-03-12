@@ -25,23 +25,21 @@ func main() {
 		fmt.Printf("unsuccessful typecast: '%s', %T\n", s, b)
 	}
 
-	/*
-		si := superInt(5)
-		b = &si
-		// b = myStringer(&si)
-		// b = superInt(5)
-		if i, ok := b.(int); ok {
-			fmt.Printf("successful typecast to int: %d\n", i)
-		} else if s, ok := b.(fmt.Stringer); ok {
-			fmt.Printf("successful typecast to Stringer: %v\n", s)
-		} else if s, ok := b.(myStringer); ok {
-			fmt.Printf("successful typecast to myStringer: %v\n", s)
-		} else if mi, ok := b.(superInt); ok {
-			fmt.Printf("successful typecast to myInt: %s\n", mi)
-		} else {
-			fmt.Printf("unsuccessful typecast for %T\n", b)
-		}
-	*/
+	si := superInt(5)
+	b = &si
+	// b = myStringer(&si)
+	// b = superInt(5)
+	if i, ok := b.(int); ok {
+		fmt.Printf("successful typecast to int: %d\n", i)
+	} else if s, ok := b.(fmt.Stringer); ok {
+		fmt.Printf("successful typecast to Stringer: %v\n", s)
+	} else if s, ok := b.(myStringer); ok {
+		fmt.Printf("successful typecast to myStringer: %v\n", s)
+	} else if mi, ok := b.(superInt); ok {
+		fmt.Printf("successful typecast to myInt: %s\n", mi)
+	} else {
+		fmt.Printf("unsuccessful typecast for %T\n", b)
+	}
 
 	/*
 		switch a := b.(type) {

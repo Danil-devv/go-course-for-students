@@ -19,6 +19,6 @@ func main() {
 	fmt.Printf("superInt: %s\n", i)
 	fmt.Println("superInt:", i)
 
-	// s := fmt.Stringer(i)
-	// fmt.Printf("stringer: %s\n", s)
+	s := fmt.Stringer(i)
+	fmt.Printf("stringer: %s\n", s)
 }
