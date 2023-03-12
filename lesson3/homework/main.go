@@ -37,14 +37,14 @@ func validateFlags(options *Options) error {
 		_, err := os.Stat(options.From)
 		if errors.Is(err, os.ErrNotExist) {
 			return errors.New(fmt.Sprintf("the file %s is not exist."+
-				" there is no way to read the file", options.From))
+				" unable to read the file", options.From))
 		}
 
-		// проверка того, что размер файла больше кол-ва пропускаемых байт
+		// проверка того, что размер файла больше кол-ва игнорируемых байт
 		f, _ := os.Stat(options.From)
 		if f.Size() < options.Offset && options.Offset > 0 {
 			return errors.New("offset is bigger than file size." +
-				" there is no way to read the file")
+				" unable to read the file")
 		}
 	}
 
@@ -53,16 +53,21 @@ func validateFlags(options *Options) error {
 		_, err := os.Stat(options.To)
 		if !errors.Is(err, os.ErrNotExist) {
 			return errors.New(fmt.Sprintf("the file on path %s is already exist."+
-				" there is no way to write data", options.To))
+				" unable to write data", options.To))
 		}
 	}
 
-	// проверка того, что все опции, переданные во флаг conv валидны
+	// проверка того, что все опции, переданные во флаг conv корректны
 	validArgs := map[string]bool{"trim_spaces": true, "upper_case": true, "lower_case": true}
 	for arg := range options.Conv {
 		if !validArgs[arg] {
-			return errors.New(fmt.Sprintf("conv arg <%s> is not validate", arg))
+			return errors.New(fmt.Sprintf("conv arg <%s> is not correct", arg))
 		}
+	}
+
+	// невозможно одновременно привести текст и к верхнему, и к нижнему регистру
+	if options.Conv["upper_case"] && options.Conv["lower_case"] {
+		return errors.New("unable to convert data in upper and lower case at the same time")
 	}
 
 	// проверки того, что данные во флагах имеют смысл
@@ -81,7 +86,7 @@ func validateFlags(options *Options) error {
 	return nil
 }
 
-// ParseFlags парсит параметры и возвращает их вместе с ошибкой
+// ParseFlags парсит параметры и возвращает ошибку, если они не валидны
 func ParseFlags() (*Options, error) {
 	var opts Options
 	opts.SetDefault()
@@ -92,12 +97,14 @@ func ParseFlags() (*Options, error) {
 	flag.Int64Var(&opts.Limit, "limit", -1, "max count of bytes to read. by default - -1")
 	flag.Int64Var(&opts.BlockSize, "block-size", -1, "max count of bytes to read and write."+
 		" by default - -1")
-	conv := *flag.String("conv", "", "conversions over text: upper_case, lower_case and trim_spaces")
+	conv := flag.String("conv", "", "conversions over text: upper_case, lower_case and trim_spaces")
 
 	flag.Parse()
 
-	for _, arg := range strings.Split(conv, ",") {
-		opts.Conv[arg] = true
+	for _, arg := range strings.Split(*conv, ",") {
+		if arg != "" {
+			opts.Conv[arg] = true
+		}
 	}
 
 	err := validateFlags(&opts)
@@ -105,50 +112,51 @@ func ParseFlags() (*Options, error) {
 	return &opts, err
 }
 
-func OpenFile(filePath string, read bool) (io.ReadWriteCloser, error) {
+// OpenFile возвращает поток ввода/вывода типа io.ReadWriteCloser
+// filepath - путь к файлу
+// если readMode == true, возвращается поток ввода, иначе - поток вывода
+func OpenFile(filePath string, readMode bool) (io.ReadWriteCloser, error) {
 	var (
 		stream io.ReadWriteCloser
 		err    error
 	)
 
-	if filePath == "" {
-		if read {
-			stream = os.Stdin
+	if readMode {
+		if filePath == "" {
+			stream = os.Stdin // по умолчанию считываем из stdin
 		} else {
-			stream = os.Stdout
+			stream, err = os.Open(filePath)
 		}
 	} else {
-		if read {
-			stream, err = os.Open(filePath)
+		if filePath == "" {
+			stream = os.Stdout // по умолчанию выводим в stdout
 		} else {
-			_, err := os.Stat(filePath)
-			if !errors.Is(err, os.ErrNotExist) {
-				_, _ = fmt.Fprintln(os.Stderr, "file is exist", err)
-				os.Exit(1)
-			}
 			stream, err = os.Create(filePath)
 		}
 	}
+
 	return stream, err
 }
 
-func MustReadData(filePath string, offset int64, limit int64) string {
-	stream, err := OpenFile(filePath, true)
-
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "can not open a file:", filePath)
-		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
-		os.Exit(1)
-	}
+// ReadData считывает limit байт из потока ввода stream,
+// пропуская при этом offset байт из начала ввода
+func ReadData(stream io.ReadWriteCloser, offset int64, limit int64) ([]byte, error) {
+	var (
+		err  error
+		data []byte
+	)
 
 	reader := bufio.NewReader(stream)
+	// пропуск offset байт из начала ввода
 	_, err = reader.Discard(int(offset))
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Error: offset is larger than file size")
-		os.Exit(1)
+		return data, errors.New("offset is bigger than file size." +
+			" unable to read the file")
 	}
 
-	var data []byte
+	// по умолчанию limit равен -1, поэтому стоит такое условие
+	// точно известно, что если limit > 0 изначально, то в какой-то момент либо закончится файл,
+	// либо limit станет равен нулю и ввод завершится
 	for limit != 0 {
 		readedByte, err := reader.ReadByte()
 
@@ -157,63 +165,101 @@ func MustReadData(filePath string, offset int64, limit int64) string {
 		}
 
 		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "can not read a data:", err)
-			os.Exit(1)
+			return data, errors.New("unable to read byte")
 		}
 		data = append(data, readedByte)
 		limit--
 	}
 
+	// закрытие потока ввода
 	defer func(stream io.ReadWriteCloser) {
 		err := stream.Close()
 		if err != nil {
-
+			_, _ = fmt.Fprintln(os.Stderr, "can not close a file:", err)
+			os.Exit(1)
 		}
 	}(stream)
 
-	return string(data)
+	return data, err
 }
 
-func MustConvertData(data string, conv map[string]bool) string {
-	if conv["upper_case"] != false && conv["lower_case"] != false {
-		_, _ = fmt.Fprintln(os.Stderr, "it is not possible to convert text"+
-			" to upper and lower case at the same time")
-		os.Exit(1)
-	}
-
+// ConvertData форматирует массив байт согласно ключам в словаре conv
+func ConvertData(data []byte, conv map[string]bool) []byte {
+	buf := string(data)
 	if conv["trim_spaces"] {
-		data = strings.TrimSpace(data)
+		buf = strings.TrimSpace(buf)
 	}
 
 	if conv["upper_case"] {
-		data = strings.ToUpper(data)
+		buf = strings.ToUpper(buf)
 	}
 
 	if conv["lower_case"] {
-		data = strings.ToLower(data)
+		buf = strings.ToLower(buf)
 	}
-	return data
+
+	return []byte(buf)
 }
 
-func MustWriteData(filePath string, data []byte) {
-	stream, err := OpenFile(filePath, false)
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "can not open a file:", filePath)
-		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
-		os.Exit(1)
-	}
+// WriteData записывает все байты из массива data в поток вывода stream
+func WriteData(stream io.ReadWriteCloser, data []byte) error {
+	var err error
 	writer := bufio.NewWriter(stream)
-	writer.Write(data)
-	defer writer.Flush()
+	_, err = writer.Write(data)
+	if err != nil {
+		return err
+	}
+
+	// закрытие и сохранение потока вывода
+	defer func(w *bufio.Writer) {
+		err = w.Flush()
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+			os.Exit(1)
+		}
+	}(writer)
+
+	return err
 }
 
 func main() {
+	// парсим флаги
 	opts, err := ParseFlags()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
 		os.Exit(1)
 	}
-	data := MustReadData(opts.From, opts.Offset, opts.Limit)
-	data = MustConvertData(data, opts.Conv)
-	MustWriteData(opts.To, []byte(data))
+
+	// создаем поток ввода inputStream
+	inputStream, err := OpenFile(opts.From, true)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "unable to read from input: ", err)
+		os.Exit(1)
+	}
+
+	// data - массив данных из потока ввода
+	var data []byte
+	// считываем данные из потока ввода
+	data, err = ReadData(inputStream, opts.Offset, opts.Limit)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+		os.Exit(1)
+	}
+
+	// форматируем данные
+	data = ConvertData(data, opts.Conv)
+
+	// создаем поток вывода outputStream
+	outputStream, err := OpenFile(opts.To, false)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "unable to write in output", err)
+		os.Exit(1)
+	}
+
+	// записываем данные в поток вывода
+	err = WriteData(outputStream, data)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+		os.Exit(1)
+	}
 }
