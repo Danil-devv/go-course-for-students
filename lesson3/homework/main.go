@@ -30,6 +30,70 @@ func (opts *Options) SetDefault() {
 	opts.BlockSize = -1
 }
 
+// ConvWriteReader это структура, позволяющая форматированно
+// считывать и записывать данные в поток ввода/вывода stream
+type ConvWriteReader struct {
+	stream io.ReadWriter
+}
+
+// NewConvWriteReader создает из потока ввода/вывода структуру ConvWriteReader
+func NewConvWriteReader(stream io.ReadWriter) *ConvWriteReader {
+	return &ConvWriteReader{stream}
+}
+
+// Write записывает все байты из слайса data,
+// при этом предварительно форматирует data согласно флагам в conv
+func (u *ConvWriteReader) Write(data []byte, conv *map[string]bool) (int, error) {
+	buf := string(data)
+	if (*conv)["trim_spaces"] {
+		buf = strings.TrimSpace(buf)
+	}
+
+	if (*conv)["upper_case"] {
+		buf = strings.ToUpper(buf)
+	}
+
+	if (*conv)["lower_case"] {
+		buf = strings.ToLower(buf)
+	}
+	return u.stream.Write([]byte(buf))
+}
+
+// Read считывает limit байт, пропуская при этом offset байт
+func (u *ConvWriteReader) Read(offset int64, limit int64) ([]byte, error) {
+	var (
+		err  error
+		data []byte
+	)
+
+	reader := bufio.NewReader(u.stream)
+	// пропуск offset байт из начала ввода
+	_, err = reader.Discard(int(offset))
+	if err != nil {
+		return data, errors.New("offset is bigger than file size." +
+			" unable to read the file")
+	}
+
+	// по умолчанию limit равен -1, поэтому стоит такое условие
+	// точно известно, что если limit > 0 изначально, то в какой-то момент либо закончится файл,
+	// либо limit станет равен нулю и ввод завершится
+	for limit != 0 {
+		readedByte, err := reader.ReadByte()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return data, errors.New("unable to read byte")
+		}
+		data = append(data, readedByte)
+		limit--
+	}
+
+	return data, err
+}
+
 // validateFlags проверяет все флаги на валидность
 func validateFlags(options *Options) error {
 	if options.From != "" {
@@ -138,90 +202,6 @@ func OpenFile(filePath string, readMode bool) (io.ReadWriteCloser, error) {
 	return stream, err
 }
 
-// ReadData считывает limit байт из потока ввода stream,
-// пропуская при этом offset байт из начала ввода
-func ReadData(stream io.ReadWriteCloser, offset int64, limit int64) ([]byte, error) {
-	var (
-		err  error
-		data []byte
-	)
-
-	reader := bufio.NewReader(stream)
-	// пропуск offset байт из начала ввода
-	_, err = reader.Discard(int(offset))
-	if err != nil {
-		return data, errors.New("offset is bigger than file size." +
-			" unable to read the file")
-	}
-
-	// по умолчанию limit равен -1, поэтому стоит такое условие
-	// точно известно, что если limit > 0 изначально, то в какой-то момент либо закончится файл,
-	// либо limit станет равен нулю и ввод завершится
-	for limit != 0 {
-		readedByte, err := reader.ReadByte()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return data, errors.New("unable to read byte")
-		}
-		data = append(data, readedByte)
-		limit--
-	}
-
-	// закрытие потока ввода
-	defer func(stream io.ReadWriteCloser) {
-		err := stream.Close()
-		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "can not close a file:", err)
-			os.Exit(1)
-		}
-	}(stream)
-
-	return data, err
-}
-
-// ConvertData форматирует массив байт согласно ключам в словаре conv
-func ConvertData(data []byte, conv map[string]bool) []byte {
-	buf := string(data)
-	if conv["trim_spaces"] {
-		buf = strings.TrimSpace(buf)
-	}
-
-	if conv["upper_case"] {
-		buf = strings.ToUpper(buf)
-	}
-
-	if conv["lower_case"] {
-		buf = strings.ToLower(buf)
-	}
-
-	return []byte(buf)
-}
-
-// WriteData записывает все байты из массива data в поток вывода stream
-func WriteData(stream io.ReadWriteCloser, data []byte) error {
-	var err error
-	writer := bufio.NewWriter(stream)
-	_, err = writer.Write(data)
-	if err != nil {
-		return err
-	}
-
-	// закрытие и сохранение потока вывода
-	defer func(w *bufio.Writer) {
-		err = w.Flush()
-		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
-			os.Exit(1)
-		}
-	}(writer)
-
-	return err
-}
-
 func main() {
 	// парсим флаги
 	opts, err := ParseFlags()
@@ -239,15 +219,14 @@ func main() {
 
 	// data - массив данных из потока ввода
 	var data []byte
+
 	// считываем данные из потока ввода
-	data, err = ReadData(inputStream, opts.Offset, opts.Limit)
+	reader := NewConvWriteReader(inputStream)
+	data, err = reader.Read(opts.Offset, opts.Limit)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+		_, _ = fmt.Fprintln(os.Stderr, "error with reading", err)
 		os.Exit(1)
 	}
-
-	// форматируем данные
-	data = ConvertData(data, opts.Conv)
 
 	// создаем поток вывода outputStream
 	outputStream, err := OpenFile(opts.To, false)
@@ -257,9 +236,10 @@ func main() {
 	}
 
 	// записываем данные в поток вывода
-	err = WriteData(outputStream, data)
+	writer := NewConvWriteReader(outputStream)
+	_, err = writer.Write(data, &opts.Conv)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+		_, _ = fmt.Fprintln(os.Stderr, "error with writing in output:", err)
 		os.Exit(1)
 	}
 }
