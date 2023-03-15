@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 )
@@ -26,47 +28,57 @@ func (opts *Options) SetDefault() {
 	opts.To = ""
 	opts.Conv = make(map[string]bool)
 	opts.Offset = 0
-	opts.Limit = -1
+	opts.Limit = math.MaxInt
 	opts.BlockSize = -1
 }
 
-// ConvWriteReader это структура, позволяющая форматированно
-// считывать и записывать данные в поток ввода/вывода stream
-type ConvWriteReader struct {
-	stream io.ReadWriter
+type upperCase struct {
+	output io.Writer
 }
 
-// NewConvWriteReader создает из потока ввода/вывода структуру ConvWriteReader
-func NewConvWriteReader(stream io.ReadWriter) *ConvWriteReader {
-	return &ConvWriteReader{stream}
+func NewUpperCase(output io.Writer) io.Writer {
+	return &upperCase{output}
 }
 
-// Write записывает все байты из слайса data,
-// при этом предварительно форматирует data согласно флагам в conv
-func (u *ConvWriteReader) Write(data []byte, conv *map[string]bool) (int, error) {
-	buf := string(data)
-	if (*conv)["trim_spaces"] {
-		buf = strings.TrimSpace(buf)
-	}
-
-	if (*conv)["upper_case"] {
-		buf = strings.ToUpper(buf)
-	}
-
-	if (*conv)["lower_case"] {
-		buf = strings.ToLower(buf)
-	}
-	return u.stream.Write([]byte(buf))
+func (u *upperCase) Write(p []byte) (int, error) {
+	data := bytes.ToUpper(p)
+	return u.output.Write(data)
 }
 
-// Read считывает limit байт, пропуская при этом offset байт
-func (u *ConvWriteReader) Read(offset int64, limit int64) ([]byte, error) {
+type trimSpace struct {
+	output io.Writer
+}
+
+func NewTrimSpace(output io.Writer) io.Writer {
+	return &trimSpace{output}
+}
+
+func (u *trimSpace) Write(p []byte) (int, error) {
+	data := bytes.TrimSpace(p)
+	return u.output.Write(data)
+}
+
+type lowerCase struct {
+	output io.Writer
+}
+
+func NewLowerCase(output io.Writer) io.Writer {
+	return &lowerCase{output}
+}
+
+func (u *lowerCase) Write(p []byte) (int, error) {
+	data := bytes.ToLower(p)
+	return u.output.Write(data)
+}
+
+// SectionReader считывает limit байт, пропуская при этом offset байт
+func SectionReader(in io.Reader, offset int64, limit int64) ([]byte, error) {
 	var (
 		err  error
 		data []byte
 	)
 
-	reader := bufio.NewReader(u.stream)
+	reader := bufio.NewReader(in)
 	// пропуск offset байт из начала ввода
 	_, err = reader.Discard(int(offset))
 	if err != nil {
@@ -203,43 +215,50 @@ func OpenFile(filePath string, readMode bool) (io.ReadWriteCloser, error) {
 }
 
 func main() {
-	// парсим флаги
+	// парсинг флагов
 	opts, err := ParseFlags()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
 		os.Exit(1)
 	}
 
-	// создаем поток ввода inputStream
+	// создание потока ввода inputStream
 	inputStream, err := OpenFile(opts.From, true)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "unable to read from input: ", err)
 		os.Exit(1)
 	}
 
-	// data - массив данных из потока ввода
-	var data []byte
-
-	// считываем данные из потока ввода
-	reader := NewConvWriteReader(inputStream)
-	data, err = reader.Read(opts.Offset, opts.Limit)
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "error with reading", err)
-		os.Exit(1)
-	}
-
-	// создаем поток вывода outputStream
+	// создание потока вывода outputStream
 	outputStream, err := OpenFile(opts.To, false)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "unable to write in output", err)
+		_, _ = fmt.Fprintln(os.Stderr, "unable to write in output: ", err)
 		os.Exit(1)
 	}
 
-	// записываем данные в поток вывода
-	writer := NewConvWriteReader(outputStream)
-	_, err = writer.Write(data, &opts.Conv)
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "error with writing in output:", err)
+	// создание объекта типа Writer
+	writer := io.Writer(outputStream)
+	if opts.Conv["trim_spaces"] {
+		writer = NewTrimSpace(writer)
+	}
+	if opts.Conv["lower_case"] {
+		writer = NewLowerCase(writer)
+	}
+	if opts.Conv["upper_case"] {
+		writer = NewUpperCase(writer)
+	}
+
+	// чтение данных из inputStream
+	data, err := SectionReader(inputStream, opts.Offset, opts.Limit)
+	if err != io.EOF && err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "error with reading: ", err)
+		os.Exit(1)
+	}
+
+	// запись данных в outputStream
+	_, err = writer.Write(data)
+	if err != io.EOF && err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "error with writing: ", err)
 		os.Exit(1)
 	}
 }
