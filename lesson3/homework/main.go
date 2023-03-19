@@ -252,7 +252,6 @@ func main() {
 	data, err := SectionReader(inputStream, opts.Offset, opts.Limit)
 	if err != io.EOF && err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "error with reading: ", err)
-		os.Exit(1)
 	}
 
 	// запись данных в outputStream

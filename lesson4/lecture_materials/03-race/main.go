@@ -7,6 +7,7 @@ import (
 )
 
 var counter int
+var m sync.Mutex
 
 func main() {
 	runtime.GOMAXPROCS(1)
@@ -22,9 +23,11 @@ func main() {
 func incCounter(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for i := 0; i < 2; i++ {
+		m.Lock()
 		value := counter
 		runtime.Gosched()
 		value++
 		counter = value
+		m.Unlock()
 	}
 }
