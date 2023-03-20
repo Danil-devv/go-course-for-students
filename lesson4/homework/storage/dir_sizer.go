@@ -24,40 +24,45 @@ type DirSizer interface {
 // sizer implement the DirSizer interface
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
-	// by default - 4
+	// by default - 100
 	maxWorkersCount int
 }
 
 // NewSizer returns new DirSizer instance
 func NewSizer() DirSizer {
 	return &sizer{
-		maxWorkersCount: 10,
+		maxWorkersCount: 100,
 	}
 }
 
-func worker(ctx context.Context, ch chan Dir, wg *sync.WaitGroup, size *int64, count *int64, errgg *error) {
+// worker обрабатывает указатели на массивы файлов из канала filesChan.
+// увеличивает кол-во обработанных файлов count и общий вес файлов count,
+// используя атомарные инструкции
+func worker(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup,
+	size *int64, count *int64, runtimeError *error) {
 	defer wg.Done()
 
 	for {
 		select {
 		case <-ctx.Done():
+			// если контекст закрылся, то завершаем работу
 			return
-		case d, ok := <-ch:
+		case files, ok := <-filesChan:
+			// если канал закрылся, то завершаем работу
 			if !ok {
 				return
 			}
 
-			_, files, err := d.Ls(ctx)
-			if err != nil {
-				*errgg = fmt.Errorf("file does not exist: %v", err)
-				return
-			}
-			for _, file := range files {
+			// проходим по всем файлам
+			for _, file := range *files {
 				s, err := file.Stat(ctx)
+				// если произошла ошибка при работе с файлом,
+				// то записываем ошибку в runtimeError и останавливаем горутину
 				if err != nil {
-					*errgg = fmt.Errorf("file does not exist: %v", err)
+					*runtimeError = fmt.Errorf("file does not exist: %v", err)
 					return
 				}
+				// атомарно увеличиваем size и count
 				atomic.AddInt64(size, s)
 				atomic.AddInt64(count, 1)
 			}
@@ -65,77 +70,100 @@ func worker(ctx context.Context, ch chan Dir, wg *sync.WaitGroup, size *int64, c
 	}
 }
 
-func adder(ctx context.Context, ch chan Dir, wg *sync.WaitGroup, d Dir, addersCount *int64, maxWorkersCount int, errgg *error) {
+// dirsAdder это горутина, которая добавляет файлы из директории d в канал файлов.
+// При этом она может вызывать себя рекурсивно,
+// если dirAddersCount не превосходит maxWorkersCount
+func dirsAdder(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup, dir Dir,
+	dirAddersCount *int64, maxWorkersCount int, runtimeError *error) {
+	// после завершения необходимо уменьшить счетчик работающих adder'ов на 1
 	defer func() {
-		atomic.AddInt64(addersCount, -1)
+		atomic.AddInt64(dirAddersCount, -1)
 		wg.Done()
 	}()
-	//runtime.Gosched()
 
+	// очередь для директорий
+	// будет использоваться для обхода директории в ширину
 	queue := make([]Dir, 1)
-	queue[0] = d
-	ch <- d
-	for {
-		if len(queue) == 0 {
-			return
-		}
-
-		dirs, _, err := queue[0].Ls(ctx)
+	queue[0] = dir
+	for len(queue) != 0 {
+		dirs, files, err := queue[0].Ls(ctx)
+		// передаем в канал новые файлы
+		// здесь может произойти deadlock, если не запущен хотя бы 1 worker,
+		// который читает этот канал
+		filesChan <- &files
 		if err != nil {
-			*errgg = err
+			*runtimeError = fmt.Errorf("file does not exist: %v", err)
 			return
 		}
 
+		// удаляем первый элемент из очереди
+		// т.к. он уже обработан
 		queue = queue[1:]
 
 		if len(dirs) != 0 {
 			for _, d := range dirs {
-				if *addersCount < int64(maxWorkersCount)/2 {
-					atomic.AddInt64(addersCount, 1)
+				if *dirAddersCount < int64(maxWorkersCount) {
+					// Если у нас есть пространство для создания еще одной горутины, то мы создаём ее
+					atomic.AddInt64(dirAddersCount, 1)
 					wg.Add(1)
-					go adder(ctx, ch, wg, d, addersCount, maxWorkersCount, errgg)
+					go dirsAdder(ctx, filesChan, wg, d, dirAddersCount, maxWorkersCount, runtimeError)
 				} else {
+					// Если мы не можем создать еще одну горутину, то тогда
+					// функция сама обработает все папки из директории
 					queue = append(queue, d)
-					ch <- d
 				}
 			}
 		}
 	}
 }
 
+// Size возвращает структуру Result, которая характеризует директорию d.
+// Также функция может вернуть ошибку, которая произошла во время работы
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	var (
-		size, count int64
-		wg          sync.WaitGroup
-		wg2         sync.WaitGroup
-		ch          chan Dir
-		addersCount int64
-		errgg       error
+		size, count  int64          // размер и кол-во файлов соответственно
+		workersWG    sync.WaitGroup // wait группа worker'ов
+		addersWG     sync.WaitGroup // wait группа adder'ов
+		filesChan    chan *[]File   // поток с файлами
+		addersCount  int64          // кол-во горутин-adder'ов
+		runtimeError error          // сюда будем записывать ошибку, которая могла произойти в рантайме
 	)
-	errgg = nil
 
+	// контекст с отменой используется в горутинах worker и adder
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 
-	ch = make(chan Dir, a.maxWorkersCount)
+	// поток файлов является буферизированным каналом с размером максимального кол-ва горутин
+	filesChan = make(chan *[]File, a.maxWorkersCount)
 
+	// половину горутин выделяем для worker'ов
 	for i := 1; i <= a.maxWorkersCount/2; i++ {
-		wg.Add(1)
-		go worker(ctxWithCancel, ch, &wg, &size, &count, &errgg)
+		workersWG.Add(1)
+		go worker(ctxWithCancel, filesChan, &workersWG, &size, &count, &runtimeError)
 	}
 
-	wg2.Add(1)
-	go adder(ctxWithCancel, ch, &wg2, d, &addersCount, a.maxWorkersCount, &errgg)
+	// запускаем adder, который будет добавлять в канал файлов новые файлы
+	// так же dirsAdder может рекурсивно вызывать себя в качестве горутины,
+	// поэтому мы оставили свободное место размером maxWorkersCount/2
+	addersWG.Add(1)
+	go dirsAdder(ctxWithCancel, filesChan, &addersWG, d, &addersCount, a.maxWorkersCount/2, &runtimeError)
 
-	wg2.Wait()
+	addersWG.Wait()
+	// когда все adder'ы закончили работу и добавили все файлы из директории в канал,
+	// то его можно закрыть, тем самым обеспечив возможность выхода worker'ам
+	close(filesChan)
 
-	close(ch)
+	// если в рантайме произошла какая-то ошибка,
+	// то завершаем контекст со всеми работающими горутинами
+	if runtimeError != nil {
+		cancel()
+	}
 
-	wg.Wait()
-
+	// ожидаем, пока все worker'ы закончат свою работу
+	workersWG.Wait()
 	cancel()
 
 	return Result{
 		size,
 		count,
-	}, errgg
+	}, runtimeError
 }

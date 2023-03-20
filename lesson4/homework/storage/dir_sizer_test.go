@@ -73,7 +73,7 @@ func Test_DirSizer(t *testing.T) {
 		f.EXPECT().Stat(gomock.Any()).Return(int64(0), errors.New("file does not exist"))
 
 		d := NewMockDir(ctrl)
-		d.EXPECT().Ls(gomock.Any()).Return(nil, []File{f}, nil).AnyTimes()
+		d.EXPECT().Ls(gomock.Any()).Return(nil, []File{f}, nil)
 
 		_, err := sizer.Size(ctx, d)
 		assert.ErrorContains(t, err, "file does not exist")
