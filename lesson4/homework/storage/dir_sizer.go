@@ -142,6 +142,8 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	// контекст с отменой используется в горутинах worker и adder
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 
+	defer cancel()
+
 	// поток файлов является буферизированным каналом с размером максимального кол-ва горутин
 	filesChan = make(chan *[]File, a.maxWorkersCount)
 
@@ -162,20 +164,8 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	// то его можно закрыть, тем самым обеспечив возможность выхода worker'ам
 	close(filesChan)
 
-	// если в рантайме произошла какая-то ошибка,
-	// то завершаем контекст со всеми работающими горутинами
-	m.Lock()
-	switch runtimeError {
-	case nil:
-		m.Unlock()
-	default:
-		cancel()
-		m.Unlock()
-	}
-
 	// ожидаем, пока все worker'ы закончат свою работу
 	workersWG.Wait()
-	cancel()
 
 	return Result{
 		size,
