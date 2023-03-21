@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"sync/atomic"
 )
 
 // Result represents the Size function result
@@ -64,9 +63,11 @@ func worker(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup, m *
 					m.Unlock()
 					return
 				}
-				// атомарно увеличиваем size и count
-				atomic.AddInt64(size, s)
-				atomic.AddInt64(count, 1)
+				// увеличиваем size и count
+				m.Lock()
+				*size += s
+				*count++
+				m.Unlock()
 			}
 		}
 	}
@@ -79,7 +80,9 @@ func dirsAdder(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup, 
 	dir Dir, dirAddersCount *int64, maxWorkersCount int, runtimeError *error) {
 	// после завершения необходимо уменьшить счетчик работающих adder'ов на 1
 	defer func() {
-		atomic.AddInt64(dirAddersCount, -1)
+		m.Lock()
+		*dirAddersCount--
+		m.Unlock()
 		wg.Done()
 	}()
 
@@ -106,9 +109,10 @@ func dirsAdder(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup, 
 
 		if len(dirs) != 0 {
 			for _, d := range dirs {
+				m.Lock()
 				if *dirAddersCount < int64(maxWorkersCount) {
 					// Если у нас есть пространство для создания еще одной горутины, то мы создаём ее
-					atomic.AddInt64(dirAddersCount, 1)
+					*dirAddersCount++
 					wg.Add(1)
 					go dirsAdder(ctx, filesChan, wg, m, d, dirAddersCount, maxWorkersCount, runtimeError)
 				} else {
@@ -116,6 +120,7 @@ func dirsAdder(ctx context.Context, filesChan chan *[]File, wg *sync.WaitGroup, 
 					// функция сама обработает все папки из директории
 					queue = append(queue, d)
 				}
+				m.Unlock()
 			}
 		}
 	}
