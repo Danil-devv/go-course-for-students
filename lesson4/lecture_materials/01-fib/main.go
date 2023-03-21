@@ -8,7 +8,7 @@ import (
 var n = 46
 
 func main() {
-	// go spinner(100 * time.Millisecond)
+	go spinner(100 * time.Millisecond)
 	fibN := fib(n)
 	fmt.Printf("\rFibonacci(%d) = %d\n", n, fibN)
 }

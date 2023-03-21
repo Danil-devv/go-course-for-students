@@ -14,7 +14,7 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Millisecond)
+	ctx, cancel := context.WithTimeout(req.Context(), 300*time.Millisecond)
 	defer cancel()
 
 	req = req.WithContext(ctx)
