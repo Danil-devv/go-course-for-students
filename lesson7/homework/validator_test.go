@@ -217,6 +217,25 @@ func TestValidate(t *testing.T) {
 				return true
 			},
 		},
+		{
+			name: "valid struct with slice and array fields",
+			args: args{
+				v: struct {
+					Len    []string `validate:"len:20"`
+					InInt  [2]int   `validate:"in:20,25,30"`
+					InStr  []string `validate:"in:foo,bar"`
+					MinInt []int    `validate:"min:10"`
+					MinStr []string `validate:"min:10"`
+				}{
+					Len:    []string{"abcdefghjklmopqrstvu", "abcdefghjklmopqrstvu"},
+					InInt:  [2]int{25, 20},
+					InStr:  []string{"bar", "foo"},
+					MinInt: []int{15, 16, 20, 10},
+					MinStr: []string{"abcdefghjkl", "abcdefghjklmnopqrst"},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
