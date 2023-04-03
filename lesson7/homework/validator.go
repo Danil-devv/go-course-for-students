@@ -18,19 +18,20 @@ type ValidationError struct {
 
 type ValidationErrors []ValidationError
 
+// toStrings создает из ValidationErrors слайс из ошибок в строковом формате
+func (v ValidationErrors) toStrings() []string {
+	res := make([]string, len(v))
+	for i, s := range v {
+		res[i] = s.Err.Error()
+	}
+	return res
+}
+
 // Error возвращает все ошибки валидации в строковом формате.
 // Каждая ошибка начинается с новой строки.
 // Если ошибок нет - возвращается пустая строка.
 func (v ValidationErrors) Error() string {
-	res := ""
-	for i := 0; i < len(v); i++ {
-		res += v[i].Err.Error()
-
-		if i+1 < len(v) {
-			res += "\n"
-		}
-	}
-	return res
+	return strings.Join(v.toStrings(), "\n")
 }
 
 // createReflectionSlice создает и возвращает слайс из reflect.Value.
