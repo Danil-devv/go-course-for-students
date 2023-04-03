@@ -94,9 +94,9 @@ func TestValidate(t *testing.T) {
 			name: "valid struct with tagged fields",
 			args: args{
 				v: struct {
+					InInt     int    `validate:"in:20,25,30"`
 					Len       string `validate:"len:20"`
 					LenZ      string `validate:"len:0"`
-					InInt     int    `validate:"in:20,25,30"`
 					InNeg     int    `validate:"in:-20,-25,-30"`
 					InStr     string `validate:"in:foo,bar"`
 					MinInt    int    `validate:"min:10"`
@@ -214,6 +214,48 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 			checkErr: func(err error) bool {
 				assert.Len(t, err.(ValidationErrors), 6)
+				return true
+			},
+		},
+		{
+			name: "valid struct with slice and array fields",
+			args: args{
+				v: struct {
+					InInt  [2]int   `validate:"in:20,25,30"`
+					Len    []string `validate:"len:20"`
+					InStr  []string `validate:"in:foo,bar"`
+					MinInt []int    `validate:"min:10"`
+					MinStr []string `validate:"min:10"`
+				}{
+					Len:    []string{"abcdefghjklmopqrstvu", "abcdefghjklmopqrstvu"},
+					InInt:  [2]int{25, 20},
+					InStr:  []string{"bar", "foo"},
+					MinInt: []int{15, 16, 20, 10},
+					MinStr: []string{"abcdefghjkl", "abcdefghjklmnopqrst"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid struct with slice and array fields",
+			args: args{
+				v: struct {
+					Len    []string `validate:"len:20"`
+					InInt  [2]int   `validate:"in:20,25,30"`
+					InStr  []string `validate:"in:foo,bar"`
+					MinInt []int    `validate:"min:10"`
+					MinStr []string `validate:"min:10"`
+				}{
+					Len:    []string{"abb", "abcdefghjklmopqrstvu"},
+					InInt:  [2]int{25, 18},
+					InStr:  []string{"bar", "gopher"},
+					MinInt: []int{-9},
+					MinStr: []string{"uwu", "abcdefghjklmnopqrst"},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 5)
 				return true
 			},
 		},
