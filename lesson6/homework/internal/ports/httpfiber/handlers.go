@@ -8,6 +8,17 @@ import (
 	"homework6/internal/app"
 )
 
+func handleErr(err error, c *fiber.Ctx) {
+	switch err {
+	case app.ValidationErr:
+		c.Status(http.StatusBadRequest)
+	case app.AccessErr:
+		c.Status(http.StatusForbidden)
+	default:
+		c.Status(http.StatusInternalServerError)
+	}
+}
+
 // Метод для создания объявления (ad)
 func createAd(a app.App) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -18,14 +29,14 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, reqBody.UserID)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			handleErr(err, c)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
 
@@ -44,15 +55,14 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, err := a.ChangeAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			handleErr(err, c)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
 
@@ -71,14 +81,13 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			handleErr(err, c)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
