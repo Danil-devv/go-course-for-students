@@ -18,10 +18,13 @@ func main() {
 	d := SomeData{
 		Foo: "foo",
 		Bar: 17,
-		Baz: 42,
 	}
 
+	dv := reflect.ValueOf(d)
+	_ = dv
 	dt := reflect.TypeOf(d)
+	fmt.Println(dt.Kind() == reflect.Int)
+	fmt.Println(dv.Field(1).Int())
 	fmt.Printf("SomeData number of fields: %d\n", dt.NumField())
 	fmt.Printf("SomeData field 0 type: %v\n", dt.Field(0).Type)
 	fmt.Printf("SomeData field 0 name: %v\n", dt.Field(0).Name)
