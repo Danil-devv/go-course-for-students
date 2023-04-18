@@ -184,6 +184,7 @@ func TestGetUser(t *testing.T) {
 	assert.NoError(t, err)
 
 	response, err := client.getUser(123)
+	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Email, "mail@example.com")
 	assert.Equal(t, response.Data.Nickname, "danil")
 }
