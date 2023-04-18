@@ -1,11 +1,9 @@
 package httpgin
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-
 	"homework8/internal/app"
+	"net/http"
 )
 
 type Server struct {
@@ -15,9 +13,9 @@ type Server struct {
 
 func NewHTTPServer(port string, a app.App) Server {
 	gin.SetMode(gin.ReleaseMode)
-	s := Server{port: port, app: gin.New()}
+	s := Server{port: port, app: gin.Default()}
 
-	// todo: add your own logic
+	AppRouter(s.app, a)
 
 	return s
 }
