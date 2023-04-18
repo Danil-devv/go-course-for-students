@@ -176,3 +176,14 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, response.Data.Nickname, "danil")
 	assert.Equal(t, response.Data.Email, "mail@example.com")
 }
+
+func TestGetUser(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser(123, "danil", "mail@example.com")
+	assert.NoError(t, err)
+
+	response, err := client.getUser(123)
+	assert.Equal(t, response.Data.Email, "mail@example.com")
+	assert.Equal(t, response.Data.Nickname, "danil")
+}
