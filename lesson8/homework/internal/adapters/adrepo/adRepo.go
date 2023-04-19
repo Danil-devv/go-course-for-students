@@ -30,8 +30,9 @@ func (r *adRepo) checkID(id int64) error {
 
 func (r *adRepo) AddAd(ad ads.Ad) int64 {
 	r.m.Lock()
+	defer r.m.Unlock()
+
 	r.repo = append(r.repo, ad)
-	r.m.Unlock()
 
 	return int64(len(r.repo) - 1)
 }
