@@ -89,7 +89,7 @@ func (a *app) UpdateUser(id int64, nickname string, email string) (users.User, e
 }
 
 func (a *app) CreateAd(title string, text string, authorID int64) (ads.Ad, error) {
-	t := time.Now().Format(time.DateOnly)
+	t := time.Now().UTC()
 	ad := ads.Ad{ID: a.adRepo.GetSize(), Title: title, Text: text, AuthorID: authorID,
 		CreateDate: t, LastUpdate: t}
 
@@ -129,7 +129,7 @@ func (a *app) GetAd(adID int64) (ads.Ad, error) {
 }
 
 func (a *app) ChangeAdStatus(adID int64, userID int64, published bool) (ads.Ad, error) {
-	t := time.Now().Format(time.DateOnly)
+	t := time.Now().UTC()
 	ad, err := a.adRepo.GetById(adID)
 	if err != nil {
 		return ads.Ad{}, err
@@ -144,7 +144,7 @@ func (a *app) ChangeAdStatus(adID int64, userID int64, published bool) (ads.Ad, 
 }
 
 func (a *app) UpdateAd(adID int64, userID int64, title string, text string) (ads.Ad, error) {
-	t := time.Now().Format(time.DateOnly)
+	t := time.Now().UTC()
 	ad, err := a.adRepo.GetById(adID)
 	if err != nil {
 		return ads.Ad{}, err
@@ -192,7 +192,7 @@ func (a *app) GetFilteredAds(published int, authorID int64, date string) ([]ads.
 			continue
 		}
 
-		if date != "" && date != r.CreateDate {
+		if date != "" && date != r.CreateDate.Format(time.DateOnly) {
 			continue
 		}
 
