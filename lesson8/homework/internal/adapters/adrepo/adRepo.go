@@ -3,6 +3,7 @@ package adrepo
 import (
 	"errors"
 	"homework8/internal/ads"
+	"sync"
 )
 
 var wrongIdErr = errors.New("id must be non-negative and must be less than repository size")
@@ -13,9 +14,13 @@ func New() ads.Repository {
 
 type adRepo struct {
 	repo []ads.Ad
+	m    sync.RWMutex
 }
 
 func (r *adRepo) checkID(id int64) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+
 	if id >= 0 && id <= int64(len(r.repo)-1) {
 		return nil
 	}
@@ -24,7 +29,10 @@ func (r *adRepo) checkID(id int64) error {
 }
 
 func (r *adRepo) AddAd(ad ads.Ad) int64 {
+	r.m.Lock()
 	r.repo = append(r.repo, ad)
+	r.m.Unlock()
+
 	return int64(len(r.repo) - 1)
 }
 
@@ -33,7 +41,11 @@ func (r *adRepo) GetById(id int64) (ads.Ad, error) {
 		return ads.Ad{}, err
 	}
 
-	return r.repo[id], nil
+	r.m.Lock()
+	res := r.repo[id]
+	r.m.Unlock()
+
+	return res, nil
 }
 
 func (r *adRepo) ReplaceByID(id int64, ad ads.Ad) error {
@@ -41,10 +53,17 @@ func (r *adRepo) ReplaceByID(id int64, ad ads.Ad) error {
 		return err
 	}
 
+	r.m.Lock()
 	r.repo[id] = ad
+	r.m.Unlock()
+
 	return nil
 }
 
 func (r *adRepo) GetSize() int64 {
-	return int64(len(r.repo))
+	r.m.Lock()
+	size := int64(len(r.repo))
+	r.m.Unlock()
+
+	return size
 }
