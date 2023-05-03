@@ -1,18 +1,29 @@
 package httpgin
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"homework9/internal/app"
+	"net/http"
 )
 
-func NewHTTPServer(port string, a app.App) *http.Server {
-	gin.SetMode(gin.ReleaseMode)
-	handler := gin.New()
-	s := &http.Server{Addr: port, Handler: handler}
+type Server struct {
+	port string
+	app  *gin.Engine
+}
 
-	// todo: add your own logic
+func NewHTTPServer(port string, a app.App) Server {
+	gin.SetMode(gin.ReleaseMode)
+	s := Server{port: port, app: gin.Default()}
+
+	AppRouter(s.app, a)
 
 	return s
+}
+
+func (s *Server) Listen() error {
+	return s.app.Run(s.port)
+}
+
+func (s *Server) Handler() http.Handler {
+	return s.app
 }
