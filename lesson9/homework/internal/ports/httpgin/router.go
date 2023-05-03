@@ -16,4 +16,6 @@ func AppRouter(r *gin.Engine, a app.App) {
 	r.POST("/api/v1/users", createUser(a))                // Метод для создания пользователя (user)
 	r.GET("/api/v1/users/:user_id", getUser(a))           // Метод для получения пользователя по id (user)
 	r.POST("/api/v1/users/:user_id", updateUser(a))       // Метод для изменения пользователя по id (user)
+	r.DELETE("/api/v1/users/:user_id", deleteUser(a))     // Метод для удаления пользователя по id (user)
+	r.DELETE("/api/v1/ads/:ad_id", deleteAd(a))           // Метод для удаления объявления по id (ad)
 }

@@ -13,13 +13,13 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.tcsbank.ru/a.krutyakov/lesson9/cmd/grpc/foo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"grpc/foo"
 )
 
 func main() {

@@ -64,3 +64,16 @@ func (r *userRepo) ReplaceByID(id int64, u users.User) error {
 
 	return nil
 }
+
+func (r *userRepo) DeleteByID(id int64) (users.User, error) {
+	if err := r.checkID(id); err != nil {
+		return users.User{}, err
+	}
+
+	r.m.Lock()
+	u := r.repo[id]
+	delete(r.repo, id)
+	r.m.Unlock()
+
+	return u, nil
+}

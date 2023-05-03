@@ -48,6 +48,11 @@ type adResponse struct {
 	Published bool   `json:"published"`
 }
 
+type deleteAdResponse struct {
+	ID       int64 `json:"id"`
+	AuthorID int64 `json:"author_id"`
+}
+
 type changeAdStatusRequest struct {
 	Published bool  `json:"published"`
 	UserID    int64 `json:"user_id"`

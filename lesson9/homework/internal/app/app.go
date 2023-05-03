@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	validator "github.com/Danil-devv/structValidator"
 	"homework9/internal/ads"
 	"homework9/internal/users"
@@ -26,6 +27,8 @@ type App interface {
 	CreateUser(id int64, nickname string, email string) (users.User, error)
 	GetUser(id int64) (users.User, error)
 	UpdateUser(id int64, nickname string, email string) (users.User, error)
+	DeleteUser(id int64) (users.User, error)
+	DeleteAd(adID int64, authorID int64) (ads.Ad, error)
 }
 
 func NewApp(adRepo ads.Repository, usersRepo users.Repository) App {
@@ -199,4 +202,24 @@ func (a *app) GetFilteredAds(published int, authorID int64, date string) ([]ads.
 		res = append(res, r)
 	}
 	return res, nil
+}
+
+func (a *app) DeleteUser(id int64) (users.User, error) {
+	res, err := a.usersRepo.DeleteByID(id)
+	if err != nil {
+		return users.User{}, err
+	}
+	return res, nil
+}
+
+func (a *app) DeleteAd(adID int64, authorID int64) (ads.Ad, error) {
+	ad, err := a.adRepo.DeleteByID(adID)
+	if err != nil {
+		return ads.Ad{}, err
+	}
+	if ad.AuthorID != authorID {
+		return ads.Ad{}, fmt.Errorf("user with id %d can not delete Ads of user with id %d",
+			authorID, ad.AuthorID)
+	}
+	return ad, nil
 }

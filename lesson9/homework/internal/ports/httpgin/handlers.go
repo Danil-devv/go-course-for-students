@@ -258,3 +258,41 @@ func updateUser(a app.App) gin.HandlerFunc {
 		c.JSON(http.StatusOK, UserSuccessResponse(&u))
 	}
 }
+
+// Метод для удаления пользователя (user)
+func deleteUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("user_id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
+		}
+
+		u, err := a.DeleteUser(int64(id))
+		if err != nil {
+			c.JSON(handleErr(err), AdErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(&u))
+	}
+}
+
+// Метод для удаления объявления (ad)
+func deleteAd(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody deleteAdResponse
+		if err := c.BindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
+			return
+		}
+
+		ad, err := a.DeleteAd(reqBody.ID, reqBody.AuthorID)
+		if err != nil {
+			c.JSON(handleErr(err), AdErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
+	}
+}

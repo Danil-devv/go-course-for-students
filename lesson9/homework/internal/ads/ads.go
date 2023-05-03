@@ -7,6 +7,7 @@ type Repository interface {
 	GetById(id int64) (Ad, error)
 	ReplaceByID(id int64, ad Ad) error
 	GetSize() int64
+	DeleteByID(id int64) (Ad, error)
 }
 
 type Ad struct {

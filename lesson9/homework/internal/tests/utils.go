@@ -290,3 +290,49 @@ func (tc *testClient) getUser(userID int64) (userResponse, error) {
 
 	return response, nil
 }
+
+func (tc *testClient) deleteUser(userID int64) (userResponse, error) {
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d", userID), nil)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) deleteAd(id int64, authorID int64) (adResponse, error) {
+	body := map[string]any{
+		"id":        id,
+		"author_id": authorID,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d", authorID),
+		bytes.NewReader(data))
+
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response adResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adResponse{}, err
+	}
+
+	return response, nil
+}

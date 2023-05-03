@@ -68,3 +68,16 @@ func (r *adRepo) GetSize() int64 {
 
 	return size
 }
+
+func (r *adRepo) DeleteByID(id int64) (ads.Ad, error) {
+	if err := r.checkID(id); err != nil {
+		return ads.Ad{}, err
+	}
+
+	r.m.Lock()
+	u := r.repo[id]
+	r.repo = append(r.repo[:id], r.repo[id+1:]...)
+	r.m.Unlock()
+
+	return u, nil
+}

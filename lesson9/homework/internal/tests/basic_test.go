@@ -155,7 +155,7 @@ func TestFilteredAds(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, r.Data, 4)
 
-	r, err = client.getFilteredAds(-1, -1, time.Now().Format(time.DateOnly))
+	r, err = client.getFilteredAds(-1, -1, time.Now().UTC().Format(time.DateOnly))
 	assert.NoError(t, err)
 	assert.Len(t, r.Data, 4)
 
@@ -187,4 +187,37 @@ func TestGetUser(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Email, "mail@example.com")
 	assert.Equal(t, response.Data.Nickname, "danil")
+}
+
+func TestDeleteUser(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser(123, "danil", "mail@example.com")
+	assert.NoError(t, err)
+
+	response, err := client.deleteUser(123)
+	assert.NoError(t, err)
+	assert.Equal(t, response.Data.Email, "mail@example.com")
+	assert.Equal(t, response.Data.Nickname, "danil")
+
+	_, err = client.getUser(123)
+	assert.Error(t, err)
+}
+
+func TestDeleteAd(t *testing.T) {
+	client := getTestClient()
+
+	_, err := client.createUser(123, "danil", "mail@example.com")
+	assert.NoError(t, err)
+
+	response, err := client.createAd(123, "best", "world")
+	assert.NoError(t, err)
+
+	response, err = client.deleteAd(response.Data.ID, 123)
+	assert.NoError(t, err)
+	assert.Equal(t, response.Data.Title, "best")
+	assert.Equal(t, response.Data.Text, "world")
+
+	_, err = client.getAdByID(1)
+	assert.Error(t, err)
 }
