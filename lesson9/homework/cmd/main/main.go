@@ -19,18 +19,12 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		err := httpServer.Listen()
-		if err != nil {
-			panic(err)
-		}
+		httpServer.Listen()
 	}()
 
 	go func() {
 		defer wg.Done()
-		err := grpcServer.Listen()
-		if err != nil {
-			panic(err)
-		}
+		grpcServer.Listen()
 	}()
 
 	wg.Wait()
