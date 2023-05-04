@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"homework9/internal/adapters/usersrepo"
 	"net"
@@ -43,7 +44,8 @@ func TestGRRPCCreateUser(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -84,7 +86,8 @@ func TestGRPCCreateAd(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -127,7 +130,8 @@ func TestGRPCChangeAdStatus(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -180,7 +184,8 @@ func TestGRPCUpdateAd(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -233,7 +238,8 @@ func TestGRPCListAds(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -243,19 +249,19 @@ func TestGRPCListAds(t *testing.T) {
 	client := grpcPort.NewAdServiceClient(conn)
 	res, err := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "hello", Text: "world", UserId: 111})
 	assert.NoError(t, err, "client.CreateAd")
-	res, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
+	_, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
 		Published: true})
 	assert.NoError(t, err, "client.ChangeAdStatus")
 
 	res, err = client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "test", Text: "pupupu", UserId: 111})
 	assert.NoError(t, err, "client.CreateAd")
-	res, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
+	_, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
 		Published: true})
 	assert.NoError(t, err, "client.ChangeAdStatus")
 
 	res, err = client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "some title", Text: "some text", UserId: 115})
 	assert.NoError(t, err, "client.CreateAd")
-	res, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
+	_, err = client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: res.Id, UserId: res.AuthorId,
 		Published: true})
 	assert.NoError(t, err, "client.ChangeAdStatus")
 
@@ -292,7 +298,8 @@ func TestGRPCGetUser(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -339,7 +346,8 @@ func TestGRPCDeleteUser(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -355,7 +363,7 @@ func TestGRPCDeleteUser(t *testing.T) {
 	_, err = client.DeleteUser(ctx, &grpcPort.DeleteUserRequest{Id: 15})
 	assert.NoError(t, err, "client.DeleteUser")
 
-	res, err = client.GetUser(ctx, &grpcPort.GetUserRequest{Id: 15})
+	_, err = client.GetUser(ctx, &grpcPort.GetUserRequest{Id: 15})
 	assert.Error(t, err, "client.GetUSer")
 }
 
@@ -386,7 +394,8 @@ func TestGRPCDeleteAd(t *testing.T) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -404,7 +413,7 @@ func TestGRPCDeleteAd(t *testing.T) {
 	_, err = client.DeleteAd(ctx, &grpcPort.DeleteAdRequest{AdId: res.Id, AuthorId: res.AuthorId})
 	assert.NoError(t, err, "client.DeleteAd")
 
-	res, err = client.UpdateAd(ctx, &grpcPort.UpdateAdRequest{AdId: res.Id, UserId: res.AuthorId, Title: "good bye",
+	_, err = client.UpdateAd(ctx, &grpcPort.UpdateAdRequest{AdId: res.Id, UserId: res.AuthorId, Title: "good bye",
 		Text: res.Text})
 	assert.Error(t, err, "client.GetAd")
 }
