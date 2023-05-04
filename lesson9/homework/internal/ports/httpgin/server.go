@@ -11,11 +11,11 @@ type Server struct {
 	app  *gin.Engine
 }
 
-func NewHTTPServer(port string, a app.App) Server {
+func NewHTTPServer(port string, a *app.App) Server {
 	gin.SetMode(gin.ReleaseMode)
 	s := Server{port: port, app: gin.Default()}
 
-	AppRouter(s.app, a)
+	AppRouter(s.app, *a)
 
 	return s
 }

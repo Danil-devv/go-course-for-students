@@ -22,7 +22,7 @@ func TestGRRPCCreateUser(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -63,7 +63,7 @@ func TestGRPCCreateAd(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -106,7 +106,7 @@ func TestGRPCChangeAdStatus(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -159,7 +159,7 @@ func TestGRPCUpdateAd(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -212,7 +212,7 @@ func TestGRPCListAds(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -271,7 +271,7 @@ func TestGRPCGetUser(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -318,7 +318,7 @@ func TestGRPCDeleteUser(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -365,7 +365,7 @@ func TestGRPCDeleteAd(t *testing.T) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcPort.UnaryServerInterceptor))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
