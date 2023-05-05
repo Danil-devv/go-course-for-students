@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	validator "github.com/Danil-devv/structValidator"
 	"homework9/internal/ads"
 	"homework9/internal/users"
@@ -218,8 +217,7 @@ func (a *app) DeleteAd(adID int64, authorID int64) (ads.Ad, error) {
 		return ads.Ad{}, err
 	}
 	if ad.AuthorID != authorID {
-		return ads.Ad{}, fmt.Errorf("user with id %d can not delete Ads of user with id %d",
-			authorID, ad.AuthorID)
+		return ads.Ad{}, AccessErr
 	}
 	return ad, nil
 }
