@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"google.golang.org/grpc"
-	"homework9/internal/app"
+	"homework10/internal/app"
 	"log"
 	"net"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"homework9/internal/adapters/usersrepo"
+	"homework10/internal/adapters/usersrepo"
 	"net"
 	"strconv"
 	"testing"
@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
-	"homework9/internal/adapters/adrepo"
-	"homework9/internal/app"
-	grpcPort "homework9/internal/ports/grpc"
+	"homework10/internal/adapters/adrepo"
+	"homework10/internal/app"
+	grpcPort "homework10/internal/ports/grpc"
 )
 
 func BenchmarkGRPCCreateUser(b *testing.B) {

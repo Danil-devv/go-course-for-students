@@ -2,7 +2,7 @@ package httpgin
 
 import (
 	"github.com/gin-gonic/gin"
-	"homework9/internal/app"
+	"homework10/internal/app"
 )
 
 func AppRouter(r *gin.Engine, a app.App) {

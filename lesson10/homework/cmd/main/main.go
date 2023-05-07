@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/sync/errgroup"
-	"homework9/internal/adapters/adrepo"
-	"homework9/internal/adapters/usersrepo"
-	"homework9/internal/app"
-	"homework9/internal/ports/grpc"
-	"homework9/internal/ports/httpgin"
+	"homework10/internal/adapters/adrepo"
+	"homework10/internal/adapters/usersrepo"
+	"homework10/internal/app"
+	"homework10/internal/ports/grpc"
+	"homework10/internal/ports/httpgin"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +26,7 @@ const (
 func main() {
 	a := app.NewApp(adrepo.New(), usersrepo.New())
 
-	httpServer := httpgin.NewHTTPServer(httpPort, &a)
+	httpServer := httpgin.NewHTTPServer(httpPort, a)
 	grpcServer := grpc.NewGRPCServer(grpcPort, &a)
 
 	eg, ctx := errgroup.WithContext(context.Background())

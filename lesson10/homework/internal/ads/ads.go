@@ -2,6 +2,7 @@ package ads
 
 import "time"
 
+//go:generate go run github.com/vektra/mockery/v2@v2.20.2 --output=./tests/mocks --name=Repository
 type Repository interface {
 	AddAd(ad Ad) int64
 	GetById(id int64) (Ad, error)

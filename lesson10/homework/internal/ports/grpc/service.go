@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"homework9/internal/app"
+	"homework10/internal/app"
 )
 
 func errorHandler(err error) error {

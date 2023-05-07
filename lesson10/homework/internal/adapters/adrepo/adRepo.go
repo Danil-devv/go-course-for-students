@@ -2,7 +2,7 @@ package adrepo
 
 import (
 	"errors"
-	"homework9/internal/ads"
+	"homework10/internal/ads"
 	"sync"
 )
 

@@ -2,7 +2,7 @@ package usersrepo
 
 import (
 	"errors"
-	"homework9/internal/users"
+	"homework10/internal/users"
 	"sync"
 )
 

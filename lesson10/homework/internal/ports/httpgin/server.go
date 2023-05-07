@@ -3,7 +3,7 @@ package httpgin
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"homework9/internal/app"
+	"homework10/internal/app"
 	"net/http"
 )
 
@@ -12,12 +12,12 @@ type Server struct {
 	app  *http.Server
 }
 
-func NewHTTPServer(port string, a *app.App) Server {
+func NewHTTPServer(port string, a app.App) Server {
 	gin.SetMode(gin.ReleaseMode)
 	handler := gin.New()
 	s := Server{port: port, app: &http.Server{Addr: port, Handler: handler}}
 
-	AppRouter(handler, *a)
+	AppRouter(handler, a)
 
 	return s
 }

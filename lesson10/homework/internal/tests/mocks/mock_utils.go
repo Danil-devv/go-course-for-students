@@ -1,18 +1,18 @@
-package tests
+package mocks
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"homework10/internal/adapters/adrepo"
-	"homework10/internal/adapters/usersrepo"
-	"homework10/internal/app"
+	"homework10/internal/ads"
 	"homework10/internal/ports/httpgin"
+	mockApp "homework10/internal/tests/mocks/app"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"testing"
 )
 
 type adData struct {
@@ -51,8 +51,34 @@ type testClient struct {
 	baseURL string
 }
 
-func getTestClient() *testClient {
-	a := app.NewApp(adrepo.New(), usersrepo.New())
+func getTestClient(t *testing.T) *testClient {
+
+	a := mockApp.NewApp(t)
+
+	a.On("CreateAd", "hello", "world", int64(123)).Return(ads.Ad{
+		ID:        int64(0),
+		Title:     "hello",
+		Text:      "world",
+		Published: false,
+		AuthorID:  int64(123),
+	}, nil)
+
+	a.On("GetAds").Return([]ads.Ad{{
+		ID:        int64(0),
+		Title:     "hello",
+		Text:      "world",
+		Published: false,
+		AuthorID:  int64(123),
+	}}, nil)
+
+	a.On("GetAd", int64(0)).Return(ads.Ad{
+		ID:        int64(0),
+		Title:     "hello",
+		Text:      "world",
+		Published: false,
+		AuthorID:  int64(123),
+	}, nil)
+
 	server := httpgin.NewHTTPServer(":18080", a)
 	testServer := httptest.NewServer(server.Handler())
 

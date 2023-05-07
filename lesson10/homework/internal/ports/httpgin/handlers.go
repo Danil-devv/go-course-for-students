@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"homework9/internal/app"
+	"homework10/internal/app"
 )
 
 func handleErr(err error) int {
