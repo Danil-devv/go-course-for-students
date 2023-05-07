@@ -49,7 +49,6 @@ func getAds(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ads, err := a.GetAds()
-		fmt.Println(ads)
 
 		if err != nil {
 			c.JSON(handleErr(err), AdErrorResponse(err))
