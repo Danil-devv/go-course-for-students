@@ -1,4 +1,4 @@
-package mocks
+package tests
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestCreateGetAd(t *testing.T) {
-	client := getTestClient(t)
+	client := getTestMockClient(t)
 
 	response, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
