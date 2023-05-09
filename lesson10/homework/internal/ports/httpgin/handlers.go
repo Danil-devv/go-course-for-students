@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"homework9/internal/app"
+	"homework10/internal/app"
 )
 
 func handleErr(err error) int {
@@ -49,7 +49,6 @@ func getAds(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ads, err := a.GetAds()
-		fmt.Println(ads)
 
 		if err != nil {
 			c.JSON(handleErr(err), AdErrorResponse(err))

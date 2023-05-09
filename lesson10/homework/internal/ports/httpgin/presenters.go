@@ -2,8 +2,8 @@ package httpgin
 
 import (
 	"github.com/gin-gonic/gin"
-	"homework9/internal/ads"
-	"homework9/internal/users"
+	"homework10/internal/ads"
+	"homework10/internal/users"
 )
 
 type createUserRequest struct {

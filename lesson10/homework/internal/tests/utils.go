@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"homework9/internal/adapters/usersrepo"
+	"homework10/internal/adapters/adrepo"
+	"homework10/internal/adapters/usersrepo"
+	"homework10/internal/app"
+	"homework10/internal/ports/httpgin"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
-
-	"homework9/internal/adapters/adrepo"
-	"homework9/internal/app"
-	"homework9/internal/ports/httpgin"
 )
 
 type adData struct {
@@ -54,7 +53,7 @@ type testClient struct {
 
 func getTestClient() *testClient {
 	a := app.NewApp(adrepo.New(), usersrepo.New())
-	server := httpgin.NewHTTPServer(":18080", &a)
+	server := httpgin.NewHTTPServer(":18080", a)
 	testServer := httptest.NewServer(server.Handler())
 
 	return &testClient{

@@ -3,8 +3,8 @@ package app
 import (
 	"errors"
 	validator "github.com/Danil-devv/structValidator"
-	"homework9/internal/ads"
-	"homework9/internal/users"
+	"homework10/internal/ads"
+	"homework10/internal/users"
 	"net/mail"
 	"strings"
 	"time"
@@ -15,6 +15,7 @@ var (
 	AccessErr     = errors.New("user can only change his ads")
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.20.2 --output=./tests/mocks --name=App
 type App interface {
 	CreateAd(title string, text string, authorID int64) (ads.Ad, error)
 	GetAds() ([]ads.Ad, error)
